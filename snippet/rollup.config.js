@@ -94,7 +94,7 @@ export default [
             'Cross-Origin-Embedder-Policy': 'require-corp',
           },
         }),
-      terser({
+      !isDev && terser({
         module: true,
         compress: isDev ? false : true,
       }),

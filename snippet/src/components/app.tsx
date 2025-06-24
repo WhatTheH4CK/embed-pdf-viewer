@@ -77,7 +77,7 @@ import {
   ZoomPluginPackage,
   ZoomState,
 } from '@embedpdf/plugin-zoom';
-import { RenderPluginPackage } from '@embedpdf/plugin-render';
+import { RenderPlugin, RenderPluginPackage } from '@embedpdf/plugin-render';
 import { RenderLayer } from '@embedpdf/plugin-render/preact';
 import {
   ROTATE_PLUGIN_ID,
@@ -131,7 +131,7 @@ import {
 } from '@embedpdf/plugin-interaction-manager/preact';
 import { PanMode } from '@embedpdf/plugin-pan/preact';
 import { PanPluginPackage } from '@embedpdf/plugin-pan';
-
+import type { PluginRegistry } from '@embedpdf/core';
 export { ScrollStrategy, ZoomMode, SpreadMode, Rotation };
 
 // **Enhanced Configuration Interface**
@@ -149,6 +149,10 @@ export interface PluginConfigs {
 export interface PDFViewerConfig {
   src: string;
   worker?: boolean;
+  panning?: boolean;
+  zoomLevel?: number;
+  search?: string;
+
   wasmUrl?: string;
   plugins?: PluginConfigs;
 }
@@ -203,6 +207,7 @@ function mergePluginConfigs(userConfigs: PluginConfigs = {}): Required<PluginCon
 // **Props for the PDFViewer Component**
 interface PDFViewerProps {
   config: PDFViewerConfig;
+  onInitialized?: (registry: PluginRegistry) => void;   // ← add
 }
 
 type State = GlobalStoreState<{
@@ -413,6 +418,8 @@ export const menuItems: Record<string, MenuItem<State>> = {
     type: 'action',
     action: (registry) => {
       const loader = registry.getPlugin<LoaderPlugin>(LOADER_PLUGIN_ID)?.provides();
+
+      console.log('loader', loader)
       if (loader) {
         loader.openFileDialog();
       }
@@ -888,7 +895,7 @@ export const menuItems: Record<string, MenuItem<State>> = {
           visibleChild: 'leftPanelMain',
           open:
             state.plugins.ui.panel.leftPanel.open === true &&
-            state.plugins.ui.panel.leftPanel.visibleChild === 'leftPanelMain'
+              state.plugins.ui.panel.leftPanel.visibleChild === 'leftPanelMain'
               ? false
               : true,
         });
@@ -1173,28 +1180,28 @@ export const menuItems: Record<string, MenuItem<State>> = {
     label: 'Squiggly Selection',
     type: 'action',
     icon: 'squiggly',
-    action: (registry, state) => {},
+    action: (registry, state) => { },
   },
   underlineSelection: {
     id: 'underlineSelection',
     label: 'Underline Selection',
     type: 'action',
     icon: 'underline',
-    action: (registry, state) => {},
+    action: (registry, state) => { },
   },
   strikethroughSelection: {
     id: 'strikethroughSelection',
     label: 'Strikethrough Selection',
     type: 'action',
     icon: 'strikethrough',
-    action: (registry, state) => {},
+    action: (registry, state) => { },
   },
   highlightSelection: {
     id: 'highlightSelection',
     label: 'Highlight Selection',
     type: 'action',
     icon: 'highlight',
-    action: (registry, state) => {},
+    action: (registry, state) => { },
   },
   styleAnnotation: {
     id: 'styleAnnotation',
@@ -1210,7 +1217,7 @@ export const menuItems: Record<string, MenuItem<State>> = {
           visibleChild: 'leftPanelAnnotationStyle',
           open:
             state.plugins.ui.panel.leftPanel.open === true &&
-            state.plugins.ui.panel.leftPanel.visibleChild === 'leftPanelAnnotationStyle'
+              state.plugins.ui.panel.leftPanel.visibleChild === 'leftPanelAnnotationStyle'
               ? false
               : true,
         });
@@ -1936,11 +1943,19 @@ export const uiConfig: UIPluginConfig = {
   icons,
 };
 
-export function PDFViewer({ config }: PDFViewerProps) {
+export function PDFViewer({ config, onInitialized }: PDFViewerProps) {
+  console.error('PDF VIEWER', JSON.stringify(config), JSON.stringify(onInitialized))
   const { engine, isLoading } = usePdfiumEngine({
     wasmUrl: config.wasmUrl ?? 'https://cdn.jsdelivr.net/npm/@embedpdf/pdfium/dist/pdfium.wasm',
     worker: config.worker,
   });
+  useEffect(() => {
+    if (engine && !isLoading) {
+      document.dispatchEvent(new CustomEvent('pdf-loaded', {
+        detail: { pdf: config.src }
+      }));
+    }
+  }, [engine, isLoading]);
 
   // **Merge user configurations with defaults**
   const pluginConfigs = mergePluginConfigs(config.plugins);
@@ -1991,6 +2006,9 @@ export function PDFViewer({ config }: PDFViewerProps) {
               leftPanelAnnotationStyleRenderer,
             );
           }
+
+
+          onInitialized?.(registry);
         }}
         plugins={[
           createPluginRegistration(UIPluginPackage, uiConfig),
@@ -2135,3 +2153,4 @@ export function PDFViewer({ config }: PDFViewerProps) {
     </>
   );
 }
+

@@ -18,6 +18,7 @@
     "build:react-mui": "turbo run build --filter=\"./packages/*\" --filter=\"./examples/react-mui\"",
     "build:packages": "turbo run build --filter=\"./packages/*\"",
     "build:snippet": "turbo run build --filter=\"./packages/*\" --filter=\"./snippet\"",
+    "build:snippet:dev": "cd snippet && NODE_ENV=development pnpm run dev",
     "build:watch": "ROARR_LOG=true turbowatch ./config/turbowatch.config.ts | roarr",
     "watch": "turbo watch",
     "watch:packages": "turbo watch build --filter=\"./packages/*\"",

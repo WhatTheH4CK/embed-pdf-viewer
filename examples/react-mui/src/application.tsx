@@ -41,6 +41,7 @@ import { Sidebar } from './components/sidebar';
 import { Toolbar } from './components/toolbar';
 import { ViewSidebarReverseIcon } from './icons';
 
+console.log('TEST123XASD');
 const plugins = [
   createPluginRegistration(LoaderPluginPackage, {
     loadingOptions: {
